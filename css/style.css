@@ -1,0 +1,36 @@
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  height: 100%;
+}
+.main {
+    width: 100%;
+    height: 100%;
+    position: fixed;
+    top: 0;
+    left: 0;
+    display: flex;
+    align-items: center;
+    align-content: center; 
+    justify-content: center; 
+    overflow: auto; 
+}
+.board {
+	display: flex;
+ 	flex-wrap: wrap;
+ 	justify-content: space-around;
+	width: 450px;
+	height: 450px;
+}
+
+.cell {
+	flex: 0 0 33%;
+	height: 150px;
+	margin-bottom: 5px;
+	background-color: #ccc;
+	font-size: 120px;
+	text-align: center;
+	color: #fff;
+}
