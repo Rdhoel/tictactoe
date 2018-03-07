@@ -1,34 +1,21 @@
 (function() {
-	var board = document.getElementById('board');
-	var resultContainer = document.getElementById('text');
-	var startGameButton = document.getElementById('start-game');
-	var totalMovesCounter, currentPlayer;
-	
-	var state = {
-		'X': {
-			'totalMoves': 0,
-			'doneMoves': []
-		},
-		'O': {
-			'totalMoves': 0,
-			'doneMoves': []
-		}
-	};
+	let totalMovesCounter, currentPlayer, state, isNew;
 
+	const board = document.getElementById('board');
+	const resultContainer = document.getElementById('text');
+	const startGameButton = document.getElementById('start-game');
 	const winCombos = [
 		[1, 2, 3],
 		[4, 5, 6],
 		[7, 8, 9],
 		[1, 4, 7],
-		[2, 5, 7],
+		[2, 5, 8],
 		[3, 6, 9],
 		[1, 5, 9],
 		[3, 5, 7]
 	];
 
-	function startGame() {
-		setDefaultOptions();		
-		
+	function startGame() {		
 		resultContainer.style.display = 'none';
 		
 		board.classList.add('board');
@@ -38,6 +25,8 @@
 			newCell.dataset.position = i;
 			newCell.addEventListener('click', move);
 		}
+
+		setDefaultOptions();
 	}
 
 	function endGame(win) {
@@ -45,14 +34,16 @@
 
 		let winnerInformation = document.getElementById('winner');
 		if (win) {
-			winnerInformation.innerText = `Player ${currentPlayer} win by ${state[currentPlayer].totalMoves} moves`;
+			winnerInformation.innerText = `Player ${currentPlayer} win by ${state[currentPlayer].totalMoves} moves \n Total moves ${totalMovesCounter}`;
 		} else {
 			winnerInformation.innerText = 'No turns left';
 		}
 
-		board.innerHTML = '';
+		board.innerText = '';
 		board.classList.remove('board');
+		isNew = true;
 
+		startGameButton.innerText = 'Start new game';
 	}
 	
 	function move() {
@@ -60,12 +51,10 @@
 			return false;
 		}
 
-		this.innerText = currentPlayer;
-		this.classList.add('disable');
-		
+		setStateForCell(this, currentPlayer);
+
 		state[currentPlayer].doneMoves.push(+this.dataset.position);
 		state[currentPlayer].totalMoves++;
-		
 		totalMovesCounter++;
 		
 		if (totalMovesCounter >= 5) {
@@ -80,9 +69,7 @@
 			endGame(false);
 		}
 		Array.from(winCombos).forEach(winCombo => {
-			console.log(winCombo, state[currentPlayer].doneMoves);
-			if (state[currentPlayer].doneMoves.constaintCombination(winCombo)) {
-				console.log(1);
+			if (compareSets(winCombo, state[currentPlayer].doneMoves)) {
 				endGame(true);
 			}
    		});
@@ -91,24 +78,43 @@
 	function updateHistory() {
 		currentPlayer = ((currentPlayer === 'X') ? 'O' : 'X');
 
-		var getParameters = `?totalMovesCounter=${totalMovesCounter}&playerX=${state['X'].doneMoves}&playerO=${state['O'].doneMoves}&currentPlayer=${currentPlayer}`;
+		var getParameters = `?totalMovesCounter=${totalMovesCounter}&currentPlayer=${currentPlayer}&state=${JSON.stringify(state)}`;
 		window.history.pushState(null, null, `${window.location.pathname}${getParameters}`);
 	}
 
-	Array.prototype.constaintCombination = function(combosArray) {
-    	return combosArray.every(function(element) {
-        	return this.indexOf(element) !== -1;
-    	}, this);
-	}
 
 	function setDefaultOptions() {
-		totalMovesCounter = findGet('totalMovesCounter') ? findGet('totalMovesCounter') : 1;
+		if (isNew) {
+			window.history.pushState(null, null, `${window.location.pathname}`);
+			totalMovesCounter = 1;
+			currentPlayer = 'X';
 		
-		currentPlayer = findGet('currentPlayer') ? findGet('currentPlayer') : 'X';
-		
-		state.X.totalMoves = findGet('playerX') ? findGet('playerX') : 0;
-		state.O.totalMoves = findGet('playerY') ? findGet('playerY') : 0;
-		state.X.doneMoves = state.O.doneMoves = [];
+			state = {
+				X: {
+					totalMoves: 0,
+					doneMoves: []
+				},
+				O: {
+					totalMoves: 0,
+					doneMoves: []
+				}
+			};
+			return true;
+		}
+
+		totalMovesCounter = findGet('totalMovesCounter');
+		currentPlayer = findGet('currentPlayer');
+		state = JSON.parse(findGet('state'));
+
+		Array.from(state.X.doneMoves).forEach(movesX => {
+			let cell = document.querySelectorAll(`[data-position="${movesX}"]`);
+			setStateForCell(cell[0], 'X');
+		});
+
+		Array.from(state.O.doneMoves).forEach(movesO => {
+			let cell = document.querySelectorAll(`[data-position="${movesO}"]`);
+			setStateForCell(cell[0], 'O');
+		});
 	}
 
 	function findGet(parameter) {
@@ -126,7 +132,27 @@
 		return decodeURIComponent(results[2].replace(/\+/g, " "));
 	}
 
-	startGameButton.innerText = (window.location.search.toString().length > 0 ? 'Continue game' : 'Start new game');
+	function compareSets(combos, moves) {
+		let isContaint = true;
+		Array.from(combos).forEach(combo => {
+			if (moves.indexOf(combo) === -1){
+				isContaint = false;
+			}
+		});
+		return isContaint;
+	}
+
+	function setStateForCell(cell, text) {
+		if (!cell) {
+			return false;
+		}
+
+		cell.classList.add('disable');
+		cell.innerText = text;
+	}
+
+	isNew = (window.location.search.toString().length <= 0);
+	startGameButton.innerText = (isNew ? 'Start new game' : 'Continue game');
 	startGameButton.addEventListener('click', startGame);
 
 })();
